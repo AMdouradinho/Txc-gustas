@@ -160,6 +160,7 @@ test('loja informa nome, limite e provas restantes; cria cookie pid', async () =
   assert.equal(r.body.limitPerDay, 5);
   assert.equal(r.body.remaining, 5);
   assert.equal(r.body.tryonEnabled, true);
+  assert.equal(r.body.retentionHours, 24);
   const pid = r.headers['set-cookie'].find((c) => c.startsWith('pid='));
   assert.match(pid, /HttpOnly/i);
 });

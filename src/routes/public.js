@@ -53,6 +53,7 @@ export function publicRouter({ db, config, service }) {
       whatsapp: s.store.whatsapp,
       storeUrl: s.store.storeUrl,
       limitPerDay: s.limits.perClientPerDay,
+      retentionHours: s.limits.retentionHours,
       remaining: service.remaining(req.clientId, req.ip),
       tryonEnabled: Boolean(active && (!active.requiresKey || config.keys?.[active.id])),
     });

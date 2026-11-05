@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>TXC · Peça</title>
+    <meta name="theme-color" content="#f4efe7" />
+    <link rel="stylesheet" href="/css/store.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">TXC</span>
+        <span class="brand-name" data-store-name>TXC</span>
+      </a>
+      <span class="header-tag">Provador virtual</span>
+    </header>
+
+    <main class="container">
+      <a class="back" href="/">← Voltar ao catálogo</a>
+      <p class="loading-msg" id="page-msg">Carregando…</p>
+
+      <div class="product-layout" id="product" hidden>
+        <div class="gallery">
+          <div class="gallery-main"><img id="main-img" alt="" /></div>
+          <div class="thumbs" id="thumbs"></div>
+        </div>
+
+        <div class="details">
+          <p class="eyebrow" id="p-category"></p>
+          <h1 id="p-name"></h1>
+          <p class="price" id="p-price"></p>
+
+          <div class="option" id="colors-option">
+            <span class="option-label">Cor: <b id="color-label"></b></span>
+            <div class="chips" id="colors"></div>
+          </div>
+          <div class="option" id="sizes-option">
+            <span class="option-label">Tamanho</span>
+            <div class="chips" id="sizes"></div>
+          </div>
+
+          <p class="desc" id="p-desc"></p>
+
+          <div class="cta" id="cta">
+            <button class="btn btn-primary btn-lg" id="tryon-open" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/></svg>
+              Experimentar em mim
+            </button>
+            <p class="hint" id="remaining-hint"></p>
+          </div>
+
+          <div class="secondary-actions">
+            <a class="btn btn-wa" id="p-whatsapp" target="_blank" rel="noopener" hidden>Falar no WhatsApp</a>
+            <a class="btn btn-ghost" id="p-buy" target="_blank" rel="noopener" hidden>Comprar</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Provador -->
+    <div class="sheet" id="tryon" hidden role="dialog" aria-modal="true" aria-labelledby="tryon-title">
+      <div class="sheet-panel">
+        <header class="sheet-head">
+          <h2 id="tryon-title">Provador virtual</h2>
+          <button class="icon-btn" id="tryon-close" type="button" aria-label="Fechar">×</button>
+        </header>
+
+        <div class="sheet-product">
+          <img id="sheet-thumb" alt="" />
+          <div><b id="sheet-name"></b><span id="sheet-variant"></span></div>
+        </div>
+
+        <section data-step="photo">
+          <div class="photo-preview" id="photo-preview">
+            <div class="photo-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+              Sua foto aparece aqui
+            </div>
+          </div>
+          <ul class="tips">
+            <li>De frente, do quadril para cima ou corpo inteiro</li>
+            <li>Boa luz e fundo simples</li>
+            <li>Só você na foto, sem óculos escuros ou boné (exceto se for provar um)</li>
+          </ul>
+          <div class="photo-buttons">
+            <label class="btn btn-ghost" for="photo-camera">Tirar foto</label>
+            <input id="photo-camera" type="file" accept="image/*" capture="user" hidden />
+            <label class="btn btn-ghost" for="photo-gallery">Da galeria</label>
+            <input id="photo-gallery" type="file" accept="image/*" hidden />
+          </div>
+          <label class="consent">
+            <input type="checkbox" id="consent" />
+            <span id="consent-text">Autorizo o uso desta foto apenas para gerar a minha prova virtual. A foto e o resultado são apagados automaticamente em 24 horas.</span>
+          </label>
+          <p class="form-error" id="photo-error" role="alert"></p>
+          <button class="btn btn-primary btn-lg" id="generate" type="button" disabled>Gerar minha prova</button>
+        </section>
+
+        <section data-step="loading" hidden>
+          <div class="loading" aria-live="polite">
+            <div class="loading-visual"><img id="loading-img" alt="" /></div>
+            <h3 id="loading-title">Vestindo a peça em você…</h3>
+            <p>Leva de 10 a 30 segundos. Não feche esta tela.</p>
+            <div class="progress"><span id="progress-bar"></span></div>
+          </div>
+        </section>
+
+        <section data-step="result" hidden>
+          <div class="compare" id="compare">
+            <img id="result-before" alt="Sua foto original" />
+            <div class="compare-after"><img id="result-after" alt="Você vestindo a peça" /></div>
+            <span class="compare-line" aria-hidden="true"></span>
+            <span class="compare-tag before">Antes</span>
+            <span class="compare-tag after">Com a peça</span>
+            <input class="compare-range" id="compare-range" type="range" min="0" max="100" value="20" aria-label="Arraste para comparar antes e depois" />
+          </div>
+          <p class="result-note">Arraste para comparar. Imagem gerada por IA, como referência.</p>
+          <div class="result-actions">
+            <a class="btn btn-wa" id="btn-whatsapp" target="_blank" rel="noopener" hidden>Quero comprar pelo WhatsApp</a>
+            <a class="btn btn-dark" id="btn-buy" target="_blank" rel="noopener" hidden>Comprar no site</a>
+            <a class="btn btn-ghost" id="btn-download" download>Baixar foto</a>
+          </div>
+          <div class="result-more">
+            <button class="btn btn-ghost" id="btn-other-photo" type="button">Outra foto</button>
+            <a class="btn btn-ghost" href="/">Outra peça</a>
+          </div>
+        </section>
+
+        <section data-step="error" hidden>
+          <div class="error-box">
+            <div class="big" aria-hidden="true">😕</div>
+            <p id="error-message" role="alert"></p>
+            <button class="btn btn-primary" id="btn-retry" type="button">Tentar de novo</button>
+          </div>
+        </section>
+
+        <p class="hint sheet-foot" id="remaining"></p>
+      </div>
+    </div>
+
+    <script type="module" src="/js/product.js"></script>
+  </body>
+</html>

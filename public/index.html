@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>TXC · Provador Virtual</title>
+    <meta name="description" content="Escolha uma peça, envie uma foto sua e veja como fica em você." />
+    <meta name="theme-color" content="#f4efe7" />
+    <link rel="stylesheet" href="/css/store.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">TXC</span>
+        <span class="brand-name" data-store-name>TXC</span>
+      </a>
+      <span class="header-tag">Provador virtual</span>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <h1>Experimente antes de comprar</h1>
+        <p>Escolha uma peça, envie uma foto sua e veja em segundos como ela fica em você.</p>
+        <ol class="steps">
+          <li><b>1</b>Escolha a peça</li>
+          <li><b>2</b>Envie sua foto</li>
+          <li><b>3</b>Veja-se vestindo</li>
+        </ol>
+      </section>
+
+      <nav class="filters" id="filters" aria-label="Filtrar por categoria"></nav>
+      <section class="grid" id="grid" aria-live="polite">
+        <p class="loading-msg">Carregando peças…</p>
+      </section>
+    </main>
+
+    <footer class="site-footer">As imagens do provador são geradas por inteligência artificial e servem como referência visual.</footer>
+    <script type="module" src="/js/catalog.js"></script>
+  </body>
+</html>
