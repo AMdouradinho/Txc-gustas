@@ -200,6 +200,7 @@ test('prova completa no modo demo, e outro cliente não vê o resultado', async 
   assert.equal(v.clientId, undefined);
   const img = await client.get(v.resultUrl).expect(200);
   assert.match(img.headers['content-type'], /svg/);
+  assert.match(img.headers['cache-control'], /private/);
   assert.match(img.headers['content-security-policy'], /default-src 'none'/);
   await request(app).get(`/api/tryon/${r.body.id}`).expect(404);
 });
@@ -259,4 +260,16 @@ test('painel: estatísticas e últimas provas', async () => {
   const list = (await agent.get('/api/admin/tryons').expect(200)).body;
   assert.equal(list.length, 1);
   assert.equal(list[0].productName, 'Camiseta Águia');
+});
+
+test('peça que nenhuma IA com chave atende aparece sem provador', async () => {
+  const { app, db } = setup({ keys: { fashn: 'k' } });
+  const agent = await adminAgent(app);
+  const cap = await productWithPhoto(agent, { name: 'Boné', category: 'boné' });
+  const tee = await productWithPhoto(agent, { name: 'Camiseta', category: 'camiseta' });
+  await agent.put('/api/admin/settings').send({ activeProvider: 'fashn' }).expect(200);
+  const list = (await request(app).get('/api/products').expect(200)).body;
+  assert.equal(list.find((p) => p.id === cap.id).canTryOn, false);
+  assert.equal(list.find((p) => p.id === tee.id).canTryOn, true);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM products').get().n, 2);
 });

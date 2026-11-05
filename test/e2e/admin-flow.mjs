@@ -50,6 +50,7 @@ export async function adminFlow({ browser, BASE, PHOTO, shot, errors }) {
   // custos
   await page.click('[data-tab="costs"]');
   await page.waitForSelector('#stats-cards .stat');
+  if (!(await page.textContent('#stats-cards')).includes('Clientes barrados')) throw new Error('painel: falta o cartão de clientes barrados');
   await page.waitForSelector('#sim-table tbody tr');
   await page.waitForSelector('#recent-table tbody tr');
   await shot(page, 'admin-4-custos');

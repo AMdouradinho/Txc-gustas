@@ -148,3 +148,5 @@ legend { font-weight: 700; padding: 0 6px; }
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 100;
   background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 999px; font-weight: 600; box-shadow: var(--shadow);
 }
+
+.alert { margin: 0 0 12px; padding: 12px 14px; border-radius: var(--radius-sm); background: #fbe6d4; color: #6f3a19; font-weight: 600; font-size: 14px; border: 1px solid #efc9a6; }

@@ -2,14 +2,14 @@
 import express from 'express';
 import { getSettings } from '../settings.js';
 import { listProducts, getProductBySlug } from '../catalog.js';
-import { PROVIDERS } from '../providers/index.js';
+import { PROVIDERS, resolveProvider } from '../providers/index.js';
 import { nowIso } from '../time.js';
 import { asyncHandler, upload, HttpError } from '../http.js';
 import { FRIENDLY_ERRORS } from '../tryon-service.js';
 
 export const EVENT_TYPES = ['whatsapp', 'buy_link', 'download'];
 
-export function publicProduct(p) {
+export function publicProduct(p, canTryOn = false) {
   return {
     id: p.id,
     slug: p.slug,
@@ -23,7 +23,19 @@ export function publicProduct(p) {
     description: p.description,
     buyUrl: p.buyUrl,
     images: p.images.map(({ id, url, color, isTryonRef }) => ({ id, url, color, isTryonRef })),
+    canTryOn,
   };
+}
+
+// A peça pode ser provada se tem foto e alguma IA com chave atende o tipo dela (ex.: FASHN não faz boné).
+function canTryOn(product, activeProvider, keys) {
+  if (!product.images.length) return false;
+  try {
+    resolveProvider(activeProvider, keys, product.tryonType);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function publicTryon(v, remaining) {
@@ -61,13 +73,14 @@ export function publicRouter({ db, config, service }) {
 
   r.get('/products', (req, res) => {
     const category = typeof req.query.category === 'string' && req.query.category ? req.query.category : undefined;
-    res.json(listProducts(db, { activeOnly: true, category }).map(publicProduct));
+    const { activeProvider } = getSettings(db);
+    res.json(listProducts(db, { activeOnly: true, category }).map((p) => publicProduct(p, canTryOn(p, activeProvider, config.keys))));
   });
 
   r.get('/products/:slug', (req, res) => {
     const p = getProductBySlug(db, req.params.slug, { activeOnly: true });
     if (!p) throw new HttpError(404, FRIENDLY_ERRORS.notFound);
-    res.json(publicProduct(p));
+    res.json(publicProduct(p, canTryOn(p, getSettings(db).activeProvider, config.keys)));
   });
 
   r.post(

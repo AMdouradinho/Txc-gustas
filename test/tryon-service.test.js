@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openDb } from '../src/db.js';
 import { updateSettings } from '../src/settings.js';
-import { createProduct, addImage } from '../src/catalog.js';
+import { createProduct, addImage, updateProduct } from '../src/catalog.js';
 import { saveImage } from '../src/images.js';
 import { createTryonService, TryonError, FRIENDLY_ERRORS } from '../src/tryon-service.js';
 import { ProviderError } from '../src/providers/errors.js';
@@ -264,4 +264,80 @@ test('tipo da imagem devolvida é conferido pelos bytes', async () => {
   const r = service.submit(base(product));
   await service.idle();
   assert.match(service.get(r.id).resultUrl, /\.png$/);
+});
+
+// ---------- correções da revisão final ----------
+
+test('cache não reaproveita entre cores quando a peça usa foto sem cor', async () => {
+  const { service, db, dirs } = setup();
+  const p = createProduct(db, { name: 'Lisa', category: 'camiseta', colors: ['Preto', 'Branco'] });
+  addImage(db, p.id, saveImage(dirs.products, jpeg(777), 'image/jpeg'), { color: null });
+  service.submit(base(p, { color: 'Preto' }));
+  await service.idle();
+  const branco = service.submit(base(p, { color: 'Branco' }));
+  assert.equal(branco.cacheHit, false);
+  await service.idle();
+});
+
+test('cache não reaproveita depois de editar os detalhes para IA', async () => {
+  const { service, product, db } = setup();
+  service.submit(base(product));
+  await service.idle();
+  updateProduct(db, product.id, { name: product.name, category: product.category, colors: product.colors, aiNotes: 'bordado no peito' });
+  assert.equal(service.submit(base(product)).cacheHit, false);
+  await service.idle();
+});
+
+test('cache não reaproveita depois de mudar parâmetros da IA', async () => {
+  const { service, product, db } = setup({ providers: { gemini: okGemini, demo }, keys: { gemini: 'k' }, settings: { activeProvider: 'gemini' } });
+  service.submit(base(product));
+  await service.idle();
+  updateSettings(db, { providers: { gemini: { imageSize: '2K' } } }, { keys: { gemini: 'k' } });
+  assert.equal(service.submit(base(product)).cacheHit, false);
+  await service.idle();
+});
+
+test('cor sem foto própria nem foto sem cor: 400', () => {
+  const { service, product } = setup();
+  assert.throws(() => service.submit(base(product, { color: 'Azul' })), (e) => e.status === 400 && e.message === 'Esta peça ainda não tem foto para prova');
+});
+
+test('limite por IP usa mensagem própria (rede compartilhada)', () => {
+  const { service, product } = setup({ settings: { limits: { perIpPerDay: 1 } } });
+  service.submit(base(product, { clientId: 'a', personBuffer: jpeg(1) }));
+  assert.throws(
+    () => service.submit(base(product, { clientId: 'b', personBuffer: jpeg(2) })),
+    (e) => e.status === 429 && e.message === 'Muitas provas feitas nesta rede hoje. Tente amanhã ou use outra conexão.',
+  );
+});
+
+test('clientes barrados ficam registrados para o dono', async () => {
+  const { service, product, db } = setup({ settings: { limits: { perClientPerDay: 1 } } });
+  service.submit(base(product, { personBuffer: jpeg(1) }));
+  assert.throws(() => service.submit(base(product, { personBuffer: jpeg(2) })));
+  await service.idle();
+  const ev = db.prepare('SELECT type, product_id FROM events').all().map((r) => ({ ...r }));
+  assert.deepEqual(ev, [{ type: 'blocked_limit', product_id: product.id }]);
+});
+
+test('teto e IA indisponível também ficam registrados', async () => {
+  let release;
+  const gate = new Promise((r) => (release = r));
+  const slow = fakeGemini(async () => {
+    await gate;
+    return { image: { buffer: PNG, mime: 'image/png' }, usage: GEMINI_USAGE, model: 'm' };
+  });
+  const { service, product, db } = setup({
+    providers: { gemini: slow, demo },
+    keys: { gemini: 'k' },
+    settings: { activeProvider: 'gemini', limits: { dailyBudgetUsd: 0.1 } },
+  });
+  service.submit(base(product, { personBuffer: jpeg(1) }));
+  assert.throws(() => service.submit(base(product, { clientId: 'c2', personBuffer: jpeg(2) })));
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('app', ?)").run(JSON.stringify({ activeProvider: 'fashn' }));
+  assert.throws(() => service.submit(base(product, { clientId: 'c3', personBuffer: jpeg(3) })));
+  release();
+  await service.idle();
+  const types = db.prepare('SELECT type FROM events ORDER BY id').all().map((r) => r.type);
+  assert.deepEqual(types, ['blocked_budget', 'blocked_unavailable']);
 });

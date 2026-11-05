@@ -65,7 +65,7 @@ test('hoje, mês e teto', () => {
   assert.equal(s.today.costUsd, 0.2055);
   assert.equal(s.month.tryons, 6);
   assert.equal(s.month.costUsd, 1.2055);
-  assert.deepEqual(s.budget, { dailyBudgetUsd: 5, spentTodayUsd: 0.2055 });
+  assert.deepEqual(s.budget, { dailyBudgetUsd: 5, spentTodayUsd: 0.2055, blockedToday: 0 });
 });
 
 test('períodos 7d, 30d e mês', () => {
@@ -129,4 +129,17 @@ test('listTryons traz as últimas com nome da peça', () => {
   assert.equal(list[0].provider, 'fashn');
   assert.equal(list[0].productName, 'Peça removida');
   assert.equal(list[1].productName, 'Polo Café');
+});
+
+test('clientes barrados no período e alerta de teto hoje', () => {
+  const { db, p } = fixture();
+  const ev = db.prepare('INSERT INTO events (type, product_id, created_at) VALUES (?, ?, ?)');
+  ev.run('blocked_limit', p.id, '2026-11-05T14:10:00.000Z');
+  ev.run('blocked_limit', p.id, '2026-11-05T14:11:00.000Z');
+  ev.run('blocked_budget', p.id, '2026-11-05T14:12:00.000Z');
+  ev.run('blocked_unavailable', p.id, '2026-11-04T10:00:00.000Z'); // ontem
+  const s = getStats(db, getSettings(db), opts);
+  assert.deepEqual(s.totals.blocked, { limit: 2, budget: 1, unavailable: 0, total: 3 });
+  assert.equal(s.budget.blockedToday, 1);
+  assert.equal(s.totals.tryons, 5);
 });

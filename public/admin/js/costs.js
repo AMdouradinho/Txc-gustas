@@ -25,7 +25,20 @@ function renderCards() {
       el('div', { class: 'bar' }, el('span', { class: used >= 0.8 ? 'hot' : '', style: `width:${Math.round(used * 100)}%` })),
     ),
     stat('Este mês', fmtBrl(month.costBrl), `${month.tryons} provas · ${fmtUsd(month.costUsd)}`),
+    stat(
+      'Clientes barrados',
+      String(totals.blocked.total),
+      `limite diário ${totals.blocked.limit} · teto ${totals.blocked.budget} · sem IA ${totals.blocked.unavailable}`,
+    ),
   );
+  const alerts = [];
+  if (budget.blockedToday) {
+    alerts.push(`O teto diário foi atingido hoje e ${budget.blockedToday} cliente(s) não conseguiram provar. Aumente o teto em Configurações se quiser atender mais.`);
+  }
+  if (totals.blocked.unavailable) {
+    alerts.push(`${totals.blocked.unavailable} tentativa(s) falharam porque nenhuma IA com chave atende a peça (ex.: boné com FASHN). Configure a chave do Gemini ou da OpenAI.`);
+  }
+  $('cost-alerts').replaceChildren(...alerts.map((a) => el('p', { class: 'alert', text: a })));
 }
 
 const emptyRow = (cols, text) => el('tr', { class: 'empty-row' }, el('td', { colspan: cols, text }));

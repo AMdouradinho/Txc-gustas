@@ -15,6 +15,10 @@ function parseTrustProxy(value, isProduction) {
 // para o server.js mostrar no console.
 export function loadConfig(env = process.env) {
   const warnings = [];
+  const isProduction = env.NODE_ENV === 'production';
+  // Em produção não há senha padrão: sem isso, qualquer um entraria no painel com "admin".
+  if (isProduction && !env.ADMIN_PASSWORD) throw new Error('ADMIN_PASSWORD é obrigatória em produção (senha do painel).');
+  if (isProduction && !env.SESSION_SECRET) throw new Error('SESSION_SECRET é obrigatória em produção (texto aleatório longo).');
 
   let adminPassword = env.ADMIN_PASSWORD || '';
   if (!adminPassword) {
@@ -39,8 +43,8 @@ export function loadConfig(env = process.env) {
       fashn: env.FASHN_API_KEY || '',
     },
     timeZone: 'America/Sao_Paulo',
-    isProduction: env.NODE_ENV === 'production',
-    trustProxy: parseTrustProxy(env.TRUST_PROXY, env.NODE_ENV === 'production'),
+    isProduction,
+    trustProxy: parseTrustProxy(env.TRUST_PROXY, isProduction),
     warnings,
   };
 }

@@ -104,6 +104,16 @@ export function getStats(db, settings, { period = 'today', now = new Date(), tim
   }
   const byProduct = [...rows.values()].sort((a, b) => b.tryons - a.tryons || b.costUsd - a.costUsd);
 
+  const blockedRows = db
+    .prepare("SELECT type, COUNT(*) AS n FROM events WHERE created_at >= ? AND type LIKE 'blocked_%' GROUP BY type")
+    .all(since);
+  const blockedCount = (type) => blockedRows.find((r) => r.type === type)?.n ?? 0;
+  totals.blocked = { limit: blockedCount('blocked_limit'), budget: blockedCount('blocked_budget'), unavailable: blockedCount('blocked_unavailable') };
+  totals.blocked.total = totals.blocked.limit + totals.blocked.budget + totals.blocked.unavailable;
+  const blockedToday = db
+    .prepare("SELECT COUNT(*) AS n FROM events WHERE created_at >= ? AND type = 'blocked_budget'")
+    .get(startOfDayUtc(now, timeZone)).n;
+
   const today = summary(db, startOfDayUtc(now, timeZone), usdToBrl);
   return {
     period,
@@ -114,7 +124,7 @@ export function getStats(db, settings, { period = 'today', now = new Date(), tim
     byProvider,
     byProduct,
     estimates: Object.fromEntries(['gemini', 'openai', 'fashn'].map((id) => [id, estimateCost(id, settings.providers[id])])),
-    budget: { dailyBudgetUsd: settings.limits.dailyBudgetUsd, spentTodayUsd: today.costUsd },
+    budget: { dailyBudgetUsd: settings.limits.dailyBudgetUsd, spentTodayUsd: today.costUsd, blockedToday },
     money: { usdToBrl, fixedMonthlyBrl },
     activeProvider: settings.activeProvider,
   };

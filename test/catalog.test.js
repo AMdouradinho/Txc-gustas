@@ -167,6 +167,20 @@ test('pickGarmentImage segue a ordem do spec §3.2', () => {
   assert.equal(pickGarmentImage(getProduct(db, p.id), undefined).id, g2.id);
 });
 
+test('cor escolhida sem foto própria só usa foto sem cor; senão null', () => {
+  const db = openDb(':memory:');
+  const p = createProduct(db, { ...base, colors: ['Verde', 'Preto'] });
+  addImage(db, p.id, 'v.jpg', { color: 'Verde' });
+  assert.equal(pickGarmentImage(getProduct(db, p.id), 'Preto'), null);
+  const general = addImage(db, p.id, 'g.jpg', { color: null });
+  assert.equal(pickGarmentImage(getProduct(db, p.id), 'Preto').id, general.id);
+});
+
+test('pickGarmentImage é o mesmo módulo usado no navegador', async () => {
+  const shared = await import('../public/js/garment.js');
+  assert.equal(shared.pickGarmentImage, pickGarmentImage);
+});
+
 test('deleteImage e deleteProduct removem arquivos do disco', () => {
   const db = openDb(':memory:');
   const dir = tmp();

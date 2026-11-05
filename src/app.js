@@ -23,12 +23,13 @@ export function createApp({ db, config, service, dirs, extendAdmin }) {
   });
 
   // Imagens: peças (permanentes) e resultados (temporários). Fotos de clientes nunca são servidas.
-  const imageHeaders = (res) => {
+  const imageHeaders = (cacheControl) => (res) => {
     res.set('Content-Security-Policy', "default-src 'none'; img-src data:; style-src 'unsafe-inline'");
-    res.set('Cache-Control', 'public, max-age=86400');
+    res.set('Cache-Control', cacheControl);
   };
-  app.use('/media/products', express.static(dirs.products, { index: false, setHeaders: imageHeaders }));
-  app.use('/media/results', express.static(dirs.results, { index: false, setHeaders: imageHeaders }));
+  app.use('/media/products', express.static(dirs.products, { index: false, setHeaders: imageHeaders('public, max-age=86400') }));
+  // Resultados mostram o cliente: nada de cache compartilhado (CDN/proxy) além do prazo de exclusão.
+  app.use('/media/results', express.static(dirs.results, { index: false, setHeaders: imageHeaders('private, max-age=3600') }));
 
   app.use(express.static(PUBLIC_DIR, { extensions: ['html'] }));
 

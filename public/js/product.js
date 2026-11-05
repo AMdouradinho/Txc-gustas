@@ -1,5 +1,6 @@
 import { api, el, formatPrice, waLink, trackEvent, productUrl, CATEGORY_LABELS, setStoreName } from './api.js';
 import { openTryon, remainingText } from './tryon.js';
+import { pickGarmentImage } from './garment.js';
 
 const $ = (id) => document.getElementById(id);
 const state = { product: null, store: null, color: null, size: null, imageId: null };
@@ -56,6 +57,7 @@ function renderOptions() {
     state.color = c;
     renderOptions();
     renderGallery();
+    renderTryButton();
   }, 'color-chip');
   $('sizes-option').hidden = !p.sizes.length;
   chips($('sizes'), p.sizes, state.size, (s) => {
@@ -84,6 +86,17 @@ function renderContactLinks() {
   }
 }
 
+// Botão só aparece se há IA para a peça e foto para a cor escolhida (mesma regra do servidor).
+function renderTryButton() {
+  const garment = state.product.canTryOn && state.store.tryonEnabled ? pickGarmentImage(state.product, state.color) : null;
+  $('tryon-open').hidden = !garment;
+  $('remaining-hint').textContent = garment
+    ? remainingText(state.store.remaining, state.store.limitPerDay)
+    : state.product.canTryOn
+      ? 'Provador ainda indisponível para esta cor.'
+      : 'Provador indisponível para esta peça no momento.';
+}
+
 function updateRemaining(n) {
   state.store.remaining = n;
   $('remaining-hint').textContent = remainingText(n, state.store.limitPerDay);
@@ -107,21 +120,17 @@ async function main() {
     renderOptions();
     renderGallery();
 
-    const canTry = store.tryonEnabled && product.images.length > 0;
-    $('cta').hidden = !canTry;
-    if (canTry) {
-      updateRemaining(store.remaining);
-      $('tryon-open').addEventListener('click', () =>
-        openTryon({
-          product,
-          store,
-          color: state.color,
-          size: state.size,
-          image: imagesForColor()[0],
-          onRemaining: updateRemaining,
-        }),
-      );
-    }
+    renderTryButton();
+    $('tryon-open').addEventListener('click', () =>
+      openTryon({
+        product,
+        store,
+        color: state.color,
+        size: state.size,
+        image: pickGarmentImage(product, state.color),
+        onRemaining: updateRemaining,
+      }),
+    );
     $('page-msg').hidden = true;
     $('product').hidden = false;
   } catch (err) {

@@ -25,6 +25,7 @@ export const FRIENDLY_ERRORS = Object.freeze({
   budget: 'Provador indisponível hoje',
   unavailable: 'Provador indisponível no momento',
   refused: 'Não conseguimos gerar. Use uma foto de frente, com boa luz e só você.',
+  ipLimit: 'Muitas provas feitas nesta rede hoje. Tente amanhã ou use outra conexão.',
   technical: 'Provador com instabilidade, tente de novo',
 });
 
@@ -73,6 +74,7 @@ export function createTryonService({
     ),
     failed: db.prepare("UPDATE tryons SET status = 'failed', error = ?, usage = ?, cost_usd = ?, latency_ms = ?, finished_at = ? WHERE id = ?"),
     orphans: db.prepare("UPDATE tryons SET status = 'failed', error = ?, finished_at = ? WHERE status = 'pending'"),
+    event: db.prepare('INSERT INTO events (type, product_id, created_at) VALUES (?, ?, ?)'),
   };
 
   // Guardamos a proporção da foto em memória até o worker rodar (não precisa ir para o banco).
@@ -117,16 +119,27 @@ export function createTryonService({
     const garment = pickGarmentImage(product, color);
     if (!garment) throw new TryonError(400, FRIENDLY_ERRORS.noGarmentPhoto);
 
+    // Cliente barrado (limite, teto, IA indisponível) fica registrado para o dono ver no painel.
+    const block = (type, status, message) => {
+      if (isCustomer) stmt.event.run(type, product.id, nowIso(now()));
+      return new TryonError(status, message);
+    };
+
     let providerId;
     try {
       providerId = resolveProvider(params.providerId ?? settings.activeProvider, keys, product.tryonType, providers);
     } catch (err) {
-      if (err instanceof ProviderError) throw new TryonError(503, isCustomer ? FRIENDLY_ERRORS.unavailable : err.message);
+      if (err instanceof ProviderError) throw block('blocked_unavailable', 503, isCustomer ? FRIENDLY_ERRORS.unavailable : err.message);
       throw err;
     }
-    const model = settings.providers[providerId]?.model ?? providerId;
+    const { prices: _prices, ...providerParams } = settings.providers[providerId] ?? {};
+    const model = providerParams.model ?? providerId;
     const ipHash = hashIp(ip);
-    const cacheKey = sha(`${sha(personBuffer)}|${garment.id}|${garment.filename}|${providerId}|${model}`);
+    // Tudo o que muda a imagem gerada entra na chave: foto, foto da peça, prompt (peça, cor, detalhes) e parâmetros da IA.
+    const prompt = buildPrompt({ product, color, tryonType: product.tryonType });
+    const cacheKey = sha(
+      [sha(personBuffer), garment.id, garment.filename, providerId, JSON.stringify(providerParams), sha(prompt)].join('|'),
+    );
     const id = crypto.randomUUID();
     const createdAt = nowIso(now());
 
@@ -138,9 +151,9 @@ export function createTryonService({
 
     if (isCustomer) {
       const used = usedToday(clientId, ipHash);
-      if (used.client >= settings.limits.perClientPerDay) throw new TryonError(429, limitMessage(settings.limits.perClientPerDay));
-      if (used.ip >= settings.limits.perIpPerDay) throw new TryonError(429, limitMessage(settings.limits.perClientPerDay));
-      if (overBudget(settings, providerId)) throw new TryonError(503, FRIENDLY_ERRORS.budget);
+      if (used.client >= settings.limits.perClientPerDay) throw block('blocked_limit', 429, limitMessage(settings.limits.perClientPerDay));
+      if (used.ip >= settings.limits.perIpPerDay) throw block('blocked_limit', 429, FRIENDLY_ERRORS.ipLimit);
+      if (overBudget(settings, providerId)) throw block('blocked_budget', 503, FRIENDLY_ERRORS.budget);
     }
 
     const personFile = saveImage(dirs.people, personBuffer, mime);

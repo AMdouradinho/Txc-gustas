@@ -126,10 +126,15 @@ test('loadConfig: trustProxy padrão 1 em produção, desligado em dev, configur
   assert.equal(loadConfig({ NODE_ENV: 'production', ADMIN_PASSWORD: 'x', SESSION_SECRET: 's' }).trustProxy, 1);
   assert.equal(loadConfig({}).trustProxy, false);
   assert.equal(loadConfig({ TRUST_PROXY: '2' }).trustProxy, 2);
-  assert.equal(loadConfig({ NODE_ENV: 'production', TRUST_PROXY: 'false' }).trustProxy, false);
+  assert.equal(loadConfig({ NODE_ENV: 'production', ADMIN_PASSWORD: 'x', SESSION_SECRET: 's', TRUST_PROXY: 'false' }).trustProxy, false);
 });
 
 test('loadConfig avisa sobre senha/segredo ausentes', () => {
   assert.equal(loadConfig({}).warnings.length, 2);
   assert.equal(loadConfig({ ADMIN_PASSWORD: 'x', SESSION_SECRET: 's' }).warnings.length, 0);
+});
+
+test('produção não sobe sem senha do painel nem segredo de sessão', () => {
+  assert.throws(() => loadConfig({ NODE_ENV: 'production', SESSION_SECRET: 's' }), /ADMIN_PASSWORD/);
+  assert.throws(() => loadConfig({ NODE_ENV: 'production', ADMIN_PASSWORD: 'x' }), /SESSION_SECRET/);
 });

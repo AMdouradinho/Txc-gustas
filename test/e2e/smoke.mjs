@@ -50,6 +50,23 @@ async function storeFlow(browser, label, viewport, expectedRemaining) {
   page.setDefaultTimeout(8000);
   await page.goto(BASE);
   await page.waitForSelector('.product-card');
+  // PNG transparente não pode virar fundo preto ao reduzir a foto
+  const corner = await page.evaluate(async () => {
+    const { resizeImage } = await import('/js/tryon.js');
+    const c = document.createElement('canvas');
+    c.width = c.height = 40;
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    const out = await resizeImage(blob);
+    const img = new Image();
+    img.src = out.dataUrl;
+    await img.decode();
+    const k = document.createElement('canvas');
+    k.width = k.height = 40;
+    const ctx = k.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    return Array.from(ctx.getImageData(1, 1, 1, 1).data.slice(0, 3));
+  });
+  if (corner.some((v) => v < 240)) throw new Error(`PNG transparente ficou escuro: rgb(${corner})`);
   const cards = await page.locator('.product-card').count();
   if (cards !== 5) throw new Error(`esperava 5 peças, vi ${cards}`);
   await shot(page, `${label}-1-catalogo`);
@@ -78,12 +95,34 @@ async function storeFlow(browser, label, viewport, expectedRemaining) {
 }
 
 let browser;
+async function closeMidGeneration(browser) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  page.setDefaultTimeout(8000);
+  page.on('pageerror', (e) => errors.push(`[fechar] ${e.message}`));
+  page.on('dialog', (d) => d.accept()); // cliente confirma o fechamento
+  await page.goto(`${BASE}/peca?slug=camisa-polo-piquet-cafe`);
+  await page.click('#tryon-open');
+  await page.setInputFiles('#photo-gallery', path.join(ROOT, 'seed', 'images', 'babylook-marinho.jpg'));
+  await page.waitForSelector('#photo-preview img');
+  await page.check('#consent');
+  await page.click('#generate');
+  await page.waitForSelector('[data-step="loading"]:not([hidden])');
+  await page.click('#tryon-close');
+  await page.click('#tryon-open');
+  if (await page.isDisabled('#generate')) throw new Error('fechar no meio da geração deixou "Gerar" travado');
+  await page.waitForTimeout(3000);
+  if (!(await page.isHidden('[data-step="result"]'))) throw new Error('resultado antigo apareceu depois de reabrir o provador');
+  await ctx.close();
+}
+
 try {
   await waitServer();
   browser = await chromium.launch();
   await storeFlow(browser, 'celular', { width: 390, height: 844 }, 4);
   // mesma foto + mesma peça: resultado reaproveitado (cache), não gasta prova
   await storeFlow(browser, 'desktop', { width: 1280, height: 800 }, 5);
+  await closeMidGeneration(browser);
   if (process.env.SMOKE_ADMIN !== '0' && fs.existsSync(path.join(ROOT, 'test', 'e2e', 'admin-flow.mjs'))) {
     const { adminFlow } = await import('./admin-flow.mjs');
     await adminFlow({ browser, BASE, PHOTO, shot, errors });

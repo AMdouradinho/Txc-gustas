@@ -80,7 +80,11 @@ Se aparecer erro de modelo ("confira o ID do modelo"), atualize o nome do modelo
 
 ## Publicar na internet
 
-Precisa de **HTTPS**: o login do painel usa cookie seguro em produção. Railway e Render já dão HTTPS.
+- **HTTPS é obrigatório.** Em produção os cookies são seguros: sem HTTPS, nem o login do painel nem o
+  resultado da prova do cliente funcionam. Railway e Render já dão HTTPS.
+- **Senha e segredo são obrigatórios.** Em produção (`NODE_ENV=production`, já definido no Dockerfile) o
+  servidor **não sobe** sem `ADMIN_PASSWORD` e `SESSION_SECRET`. Assim o painel nunca fica com uma senha
+  padrão.
 
 **Railway**
 1. Crie um projeto a partir deste repositório. O `Dockerfile` é detectado.

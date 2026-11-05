@@ -34,7 +34,10 @@ export async function resizeImage(file, maxSide = 1280, quality = 0.85) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  canvas.getContext('2d').drawImage(source, 0, 0, width, height);
+  const g = canvas.getContext('2d');
+  g.fillStyle = '#fff'; // JPEG não tem transparência: fundo branco em vez de preto
+  g.fillRect(0, 0, width, height);
+  g.drawImage(source, 0, 0, width, height);
   const dataUrl = canvas.toDataURL('image/jpeg', quality);
   const blob = await (await fetch(dataUrl)).blob();
   return { blob, width, height, dataUrl };
@@ -147,8 +150,14 @@ function showError(message) {
   step('error');
 }
 
+// Cada geração tem um número; fechar o provador invalida a que estiver em andamento,
+// para ela não travar o botão nem mostrar o resultado antigo depois de reabrir.
+let generation = 0;
+
 async function generate() {
   if (busy || !photo) return;
+  const mine = ++generation;
+  const stale = () => mine !== generation;
   busy = true;
   updateGenerate();
   $('photo-error').textContent = '';
@@ -165,11 +174,13 @@ async function generate() {
   try {
     view = await api('/api/tryon', { method: 'POST', form });
   } catch (err) {
+    if (stale()) return;
     busy = false;
     $('photo-error').textContent = err.message;
     updateGenerate();
     return;
   }
+  if (stale()) return;
   setRemaining(view.remaining);
 
   $('loading-img').src = photo.dataUrl;
@@ -182,23 +193,29 @@ async function generate() {
       $('progress-bar').style.width = `${Math.min(92, ((Date.now() - started) / 25000) * 100)}%`;
       if (Date.now() - started > MAX_WAIT_MS) throw new Error('Demorou mais que o normal. Tente de novo em instantes.');
       await sleep(POLL_MS);
+      if (stale()) return;
       tick++;
       view = await api(`/api/tryon/${view.id}`);
+      if (stale()) return;
     }
     $('progress-bar').style.width = '100%';
     setRemaining(view.remaining);
     if (view.status === 'done') showResult(view);
     else showError(view.error || 'Não conseguimos gerar agora. Tente de novo.');
   } catch (err) {
-    showError(err.message);
+    if (!stale()) showError(err.message);
   } finally {
-    busy = false;
-    updateGenerate();
+    if (!stale()) {
+      busy = false;
+      updateGenerate();
+    }
   }
 }
 
 function close() {
   if (busy && !confirm('A prova ainda está sendo gerada. Fechar mesmo assim?')) return;
+  generation++; // abandona a geração em andamento (a prova continua no servidor e aparece no histórico)
+  busy = false;
   $('tryon').hidden = true;
   document.body.classList.remove('no-scroll');
   lastFocus?.focus?.();

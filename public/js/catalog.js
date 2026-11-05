@@ -15,7 +15,7 @@ function card(p) {
       'div',
       { class: 'card-media' },
       img ? el('img', { src: img.url, alt: p.name, loading: 'lazy' }) : null,
-      p.images.length ? el('span', { class: 'card-badge', text: 'Experimente em você' }) : null,
+      p.canTryOn ? el('span', { class: 'card-badge', text: 'Experimente em você' }) : null,
     ),
     el(
       'div',

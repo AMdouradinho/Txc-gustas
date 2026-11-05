@@ -250,16 +250,5 @@ export function deleteImage(db, imageId, productsDir) {
   return true;
 }
 
-// Escolhe a foto da peça que vai para a IA (spec §3.2).
-export function pickGarmentImage(product, color) {
-  const images = product?.images ?? [];
-  if (!images.length) return null;
-  const c = normColor(color);
-  if (c) {
-    const ofColor = images.filter((i) => i.color === c);
-    const ref = ofColor.find((i) => i.isTryonRef);
-    if (ref) return ref;
-    if (ofColor.length) return ofColor[0];
-  }
-  return images.find((i) => i.isTryonRef && i.color === null) ?? images[0];
-}
+// Regra de escolha da foto da prova: compartilhada com o navegador.
+export { pickGarmentImage } from '../public/js/garment.js';
