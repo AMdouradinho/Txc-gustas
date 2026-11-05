@@ -61,7 +61,7 @@ async function tryOn(input, ctx) {
         .join(' ')
         .slice(0, 300) ||
       'sem imagem na resposta';
-    throw new ProviderError('refused', `Gemini não gerou imagem: ${reason}`, data);
+    throw new ProviderError('refused', `Gemini não gerou imagem: ${reason}`, data, data.usageMetadata);
   }
   const d = imagePart.inlineData ?? imagePart.inline_data;
   return {

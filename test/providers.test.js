@@ -112,6 +112,12 @@ test('Gemini: resposta só com texto = recusa', async () => {
   await assert.rejects(gemini.tryOn(input(), ctx('gemini', f)), (e) => e instanceof ProviderError && e.kind === 'refused');
 });
 
+test('Gemini: recusa carrega o uso cobrado', async () => {
+  const usage = { promptTokenCount: 2600, candidatesTokenCount: 0 };
+  const f = stubFetch([{ json: { candidates: [{ content: { parts: [{ text: 'no' }] } }], usageMetadata: usage } }]);
+  await assert.rejects(gemini.tryOn(input(), ctx('gemini', f)), (e) => e.kind === 'refused' && e.usage?.promptTokenCount === 2600);
+});
+
 test('Gemini: bloqueio de segurança sem candidatos = recusa', async () => {
   const f = stubFetch([{ json: { promptFeedback: { blockReason: 'SAFETY' } } }]);
   await assert.rejects(gemini.tryOn(input(), ctx('gemini', f)), (e) => e.kind === 'refused');

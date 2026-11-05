@@ -2,11 +2,13 @@
 
 export class ProviderError extends Error {
   // kind: 'refused' | 'auth' | 'config' | 'timeout' | 'upstream'
-  constructor(kind, message, raw) {
+  // usage: uso cobrado mesmo sem imagem (ex.: Gemini recusa mas cobra a entrada), quando a API informa.
+  constructor(kind, message, raw, usage) {
     super(message);
     this.name = 'ProviderError';
     this.kind = kind;
     this.raw = raw;
+    this.usage = usage;
   }
 }
 
