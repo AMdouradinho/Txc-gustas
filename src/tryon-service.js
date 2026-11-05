@@ -209,7 +209,10 @@ export function createTryonService({
         timeoutMs,
         controller,
       );
-      const resultFile = saveImage(dirs.results, result.image.buffer, result.image.mime);
+      // Só o modo demo devolve SVG (montado por nós). Das IAs, aceitamos apenas bitmap conferido pelos bytes.
+      const resultMime = row.provider === 'demo' ? result.image.mime : detectImageType(result.image.buffer);
+      if (!resultMime) throw new ProviderError('upstream', 'A IA devolveu um arquivo que não é imagem JPG/PNG/WEBP');
+      const resultFile = saveImage(dirs.results, result.image.buffer, resultMime);
       const cost = computeCost(row.provider, result.usage, providerSettings.prices);
       stmt.done.run(result.model ?? row.model, resultFile, JSON.stringify(result.usage ?? {}), cost, Date.now() - started, nowIso(now()), id);
     } catch (err) {

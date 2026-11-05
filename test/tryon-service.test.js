@@ -249,3 +249,19 @@ test('IP é guardado como hash, nunca em claro', () => {
   assert.notEqual(row.ip_hash, '1.1.1.1');
   assert.match(row.ip_hash, /^[0-9a-f]{32}$/);
 });
+
+test('IA real só pode devolver JPG/PNG/WEBP de verdade (SVG só no demo)', async () => {
+  const svgGemini = fakeGemini(async () => ({ image: { buffer: Buffer.from('<svg onload="alert(1)"/>'), mime: 'image/svg+xml' }, usage: {}, model: 'm' }));
+  const { service, product } = setup({ providers: { gemini: svgGemini, demo }, keys: { gemini: 'k' }, settings: { activeProvider: 'gemini' } });
+  const r = service.submit(base(product));
+  await service.idle();
+  assert.equal(service.get(r.id).status, 'failed');
+});
+
+test('tipo da imagem devolvida é conferido pelos bytes', async () => {
+  const lying = fakeGemini(async () => ({ image: { buffer: PNG, mime: 'image/jpeg' }, usage: {}, model: 'm' }));
+  const { service, product } = setup({ providers: { gemini: lying, demo }, keys: { gemini: 'k' }, settings: { activeProvider: 'gemini' } });
+  const r = service.submit(base(product));
+  await service.idle();
+  assert.match(service.get(r.id).resultUrl, /\.png$/);
+});

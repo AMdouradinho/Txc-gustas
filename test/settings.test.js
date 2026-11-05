@@ -121,3 +121,15 @@ test('loadConfig lê variáveis e aplica padrões', () => {
   assert.ok(d.sessionSecret.length >= 32);
   assert.match(d.dataDir, /data$/);
 });
+
+test('loadConfig: trustProxy padrão 1 em produção, desligado em dev, configurável', () => {
+  assert.equal(loadConfig({ NODE_ENV: 'production', ADMIN_PASSWORD: 'x', SESSION_SECRET: 's' }).trustProxy, 1);
+  assert.equal(loadConfig({}).trustProxy, false);
+  assert.equal(loadConfig({ TRUST_PROXY: '2' }).trustProxy, 2);
+  assert.equal(loadConfig({ NODE_ENV: 'production', TRUST_PROXY: 'false' }).trustProxy, false);
+});
+
+test('loadConfig avisa sobre senha/segredo ausentes', () => {
+  assert.equal(loadConfig({}).warnings.length, 2);
+  assert.equal(loadConfig({ ADMIN_PASSWORD: 'x', SESSION_SECRET: 's' }).warnings.length, 0);
+});

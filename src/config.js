@@ -1,6 +1,16 @@
 import path from 'node:path';
 import crypto from 'node:crypto';
 
+// Quantos proxies à frente do app (Railway/Render/Nginx) para ler o IP real do cliente.
+// Sem proxy confiável, um cliente poderia falsificar o IP no cabeçalho e furar o limite.
+function parseTrustProxy(value, isProduction) {
+  if (value === undefined || value === '') return isProduction ? 1 : false;
+  if (value === 'false' || value === '0') return false;
+  if (value === 'true') return true;
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : false;
+}
+
 // Lê as variáveis de ambiente. Não imprime nada: avisos voltam em `warnings`
 // para o server.js mostrar no console.
 export function loadConfig(env = process.env) {
@@ -30,6 +40,7 @@ export function loadConfig(env = process.env) {
     },
     timeZone: 'America/Sao_Paulo',
     isProduction: env.NODE_ENV === 'production',
+    trustProxy: parseTrustProxy(env.TRUST_PROXY, env.NODE_ENV === 'production'),
     warnings,
   };
 }
