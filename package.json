@@ -9,7 +9,7 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "start": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env server.js",
     "test": "node --disable-warning=ExperimentalWarning --test 'test/*.test.js'",
     "smoke": "node --disable-warning=ExperimentalWarning test/e2e/smoke.mjs"
   },
