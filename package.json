@@ -1,0 +1,23 @@
+{
+  "name": "provador-virtual-txc",
+  "version": "1.0.0",
+  "description": "Provador virtual com IA: o cliente envia uma foto e se vê vestindo a peça.",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test 'test/*.test.js'",
+    "smoke": "node --disable-warning=ExperimentalWarning test/e2e/smoke.mjs"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "multer": "^2.5.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.1"
+  }
+}
