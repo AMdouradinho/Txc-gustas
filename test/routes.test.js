@@ -241,3 +241,18 @@ test('eventos de clique', async () => {
   await request(app).post('/api/events').send({ type: 'hack', productId: 1 }).expect(400);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM events').get().n, 1);
 });
+
+test('painel: estatísticas e últimas provas', async () => {
+  const { app, service } = setup();
+  const agent = await adminAgent(app);
+  const p = await productWithPhoto(agent);
+  await request(app).post('/api/tryon').field('productId', p.id).field('color', 'Verde').field('consent', 'true').attach('photo', JPEG(4), 'eu.jpg').expect(202);
+  await service.idle();
+  const s = (await agent.get('/api/admin/stats?period=today').expect(200)).body;
+  assert.equal(s.totals.tryons, 1);
+  assert.equal(s.money.usdToBrl, 5.2);
+  await agent.get('/api/admin/stats?period=ano').expect(400);
+  const list = (await agent.get('/api/admin/tryons').expect(200)).body;
+  assert.equal(list.length, 1);
+  assert.equal(list[0].productName, 'Camiseta Águia');
+});

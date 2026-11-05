@@ -17,6 +17,7 @@ import { estimateCost } from '../pricing.js';
 import { parseCookies, upload, asyncHandler, HttpError } from '../http.js';
 import { FRIENDLY_ERRORS, TryonError } from '../tryon-service.js';
 import { SESSION_MS } from '../auth.js';
+import { getStats, listTryons } from '../stats.js';
 
 export function adminRouter({ db, config, service, dirs, auth, extend }) {
   const r = express.Router();
@@ -136,6 +137,13 @@ export function adminRouter({ db, config, service, dirs, auth, extend }) {
     if (!v) throw new HttpError(404, 'Prova não encontrada');
     res.json(v);
   });
+
+  // ---- custos ----
+  r.get('/stats', (req, res) => {
+    const period = typeof req.query.period === 'string' ? req.query.period : 'today';
+    res.json(getStats(db, getSettings(db), { period, now: new Date(), timeZone: config.timeZone }));
+  });
+  r.get('/tryons', (req, res) => res.json(listTryons(db, { limit: req.query.limit })));
 
   if (extend) extend(r);
   return r;
