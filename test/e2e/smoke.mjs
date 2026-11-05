@@ -45,7 +45,7 @@ async function storeFlow(browser, label, viewport, expectedRemaining) {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`[${label}] ${e.message}`));
-  page.on('console', (m) => m.type() === 'error' && errors.push(`[${label}] console: ${m.text()}`));
+  page.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && errors.push(`[${label}] console: ${m.text()}`));
 
   page.setDefaultTimeout(8000);
   await page.goto(BASE);

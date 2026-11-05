@@ -2,6 +2,9 @@
 import express from 'express';
 import { getSettings, updateSettings } from '../settings.js';
 import {
+  CATEGORIES,
+  GENDERS,
+  TRYON_TYPES,
   listProducts,
   getProduct,
   createProduct,
@@ -39,7 +42,13 @@ export function adminRouter({ db, config, service, dirs, auth, extend }) {
     next();
   });
 
-  r.get('/me', (req, res) => res.json({ ok: true, storeName: getSettings(db).store.name }));
+  r.get('/me', (req, res) =>
+    res.json({
+      ok: true,
+      storeName: getSettings(db).store.name,
+      catalog: { categories: CATEGORIES, genders: GENDERS, tryonTypes: TRYON_TYPES },
+    }),
+  );
 
   // ---- peças ----
   const mustProduct = (id) => {

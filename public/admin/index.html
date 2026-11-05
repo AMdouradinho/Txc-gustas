@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Painel · Provador Virtual</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="/css/store.css" />
+    <link rel="stylesheet" href="/admin/admin.css" />
+  </head>
+  <body class="admin">
+    <!-- Login -->
+    <main id="login-view" class="login" hidden>
+      <form class="login-card" id="login-form">
+        <span class="brand-mark" aria-hidden="true">TXC</span>
+        <h1>Painel da loja</h1>
+        <p>Cadastre peças, compare as IAs e acompanhe o custo do provador.</p>
+        <label class="field">
+          <span>Senha</span>
+          <input id="login-password" type="password" autocomplete="current-password" required />
+        </label>
+        <p class="form-error" id="login-error" role="alert"></p>
+        <button class="btn btn-primary btn-lg" id="login-submit" type="submit">Entrar</button>
+      </form>
+    </main>
+
+    <!-- Painel -->
+    <div id="app-view" hidden>
+      <header class="admin-header">
+        <div class="admin-brand">
+          <span class="brand-mark" aria-hidden="true">TXC</span>
+          <div><b id="admin-store-name">Loja</b><span>Painel do provador</span></div>
+        </div>
+        <nav class="tabs" role="tablist">
+          <button class="tab" role="tab" data-tab="products" aria-selected="true">Peças</button>
+          <button class="tab" role="tab" data-tab="compare" aria-selected="false">Comparar IAs</button>
+          <button class="tab" role="tab" data-tab="costs" aria-selected="false">Custos</button>
+          <button class="tab" role="tab" data-tab="settings" aria-selected="false">Configurações</button>
+        </nav>
+        <div class="admin-actions">
+          <a class="link" href="/" target="_blank" rel="noopener">Ver loja ↗</a>
+          <button class="link" id="logout" type="button">Sair</button>
+        </div>
+      </header>
+
+      <main class="admin-main">
+        <!-- Peças -->
+        <section data-panel="products">
+          <div id="products-list-view">
+            <div class="panel-head">
+              <div>
+                <h1>Peças</h1>
+                <p>Tudo o que aparece no catálogo e pode ser provado.</p>
+              </div>
+              <button class="btn btn-primary" id="new-product" type="button">+ Nova peça</button>
+            </div>
+            <div class="product-list" id="product-list"></div>
+          </div>
+
+          <div id="product-editor" hidden>
+            <div class="panel-head">
+              <div>
+                <button class="link" id="back-to-list" type="button">← Voltar para a lista</button>
+                <h1 id="editor-title">Nova peça</h1>
+              </div>
+              <button class="btn btn-ghost danger" id="delete-product" type="button" hidden>Excluir peça</button>
+            </div>
+
+            <div class="editor-grid">
+              <form class="card form" id="product-form" novalidate>
+                <h2>Dados da peça</h2>
+                <label class="field"><span>Nome</span><input id="f-name" required maxlength="120" /></label>
+                <div class="row">
+                  <label class="field"><span>Categoria</span><select id="f-category"></select></label>
+                  <label class="field">
+                    <span>Tipo de prova</span>
+                    <select id="f-tryonType">
+                      <option value="top">Parte de cima</option>
+                      <option value="bottom">Parte de baixo</option>
+                      <option value="full">Peça inteira</option>
+                      <option value="headwear">Cabeça (boné/chapéu)</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="row">
+                  <label class="field">
+                    <span>Gênero</span>
+                    <select id="f-gender">
+                      <option value="masculino">Masculino</option>
+                      <option value="feminino">Feminino</option>
+                      <option value="unissex">Unissex</option>
+                    </select>
+                  </label>
+                  <label class="field"><span>Preço (R$)</span><input id="f-price" inputmode="decimal" placeholder="Ex.: 159,90 (vazio = Consulte)" /></label>
+                </div>
+                <div class="field">
+                  <span>Tamanhos</span>
+                  <div class="tag-input" id="f-sizes"><input id="f-sizes-input" placeholder="Digite e aperte Enter (ex.: P, M, G)" /></div>
+                </div>
+                <div class="field">
+                  <span>Cores</span>
+                  <div class="tag-input" id="f-colors"><input id="f-colors-input" placeholder="Digite e aperte Enter (ex.: Verde Militar)" /></div>
+                </div>
+                <label class="field"><span>Link de compra (opcional)</span><input id="f-buyUrl" type="url" placeholder="https://..." /></label>
+                <label class="field"><span>Descrição para o cliente</span><textarea id="f-description" rows="3"></textarea></label>
+                <label class="field">
+                  <span>Detalhes para a IA</span>
+                  <textarea id="f-aiNotes" rows="3" placeholder="Ex.: bordado pequeno da águia no peito esquerdo, gola canelada, dois botões"></textarea>
+                  <small>Descreva estampa, bordado, gola e botões. Quanto mais preciso, mais fiel fica a prova.</small>
+                </label>
+                <label class="check"><input id="f-active" type="checkbox" checked /> Mostrar no catálogo</label>
+                <p class="form-error" id="product-error" role="alert"></p>
+                <button class="btn btn-primary" id="save-product" type="submit">Salvar peça</button>
+              </form>
+
+              <section class="card" id="photos-section" hidden>
+                <h2>Fotos</h2>
+                <p class="muted">A foto marcada com ★ é a que a IA usa na prova daquela cor. Pode ser a peça no cabide, numa mesa ou vestida por um modelo.</p>
+                <div class="upload-row">
+                  <label class="field compact">
+                    <span>Cor das fotos enviadas</span>
+                    <select id="upload-color"></select>
+                  </label>
+                  <label class="btn btn-dark" for="photo-upload">Enviar fotos</label>
+                  <input id="photo-upload" type="file" accept="image/*" multiple hidden />
+                </div>
+                <p class="form-error" id="photo-error" role="alert"></p>
+                <div class="photo-grid" id="photo-grid"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Comparar IAs -->
+        <section data-panel="compare" hidden>
+          <div class="panel-head">
+            <div>
+              <h1>Comparar IAs</h1>
+              <p>Envie uma foto e veja lado a lado o resultado, o custo e o tempo de cada IA. Use para escolher a IA da loja.</p>
+            </div>
+          </div>
+          <div class="compare-setup card">
+            <div class="compare-photo">
+              <div class="photo-preview" id="compare-preview"><span>Sua foto de teste</span></div>
+              <label class="btn btn-ghost" for="compare-photo">Escolher foto</label>
+              <input id="compare-photo" type="file" accept="image/*" hidden />
+            </div>
+            <div class="compare-options">
+              <div class="row">
+                <label class="field"><span>Peça</span><select id="compare-product"></select></label>
+                <label class="field"><span>Cor</span><select id="compare-color"></select></label>
+              </div>
+              <div class="field">
+                <span>IAs</span>
+                <div class="provider-checks" id="compare-providers"></div>
+              </div>
+              <p class="form-error" id="compare-error" role="alert"></p>
+              <button class="btn btn-primary" id="compare-run" type="button">Gerar comparação</button>
+              <small class="muted">Cada IA cobra pela prova gerada (exceto Demo). Os testes entram no relatório de custos.</small>
+            </div>
+          </div>
+          <div class="compare-results" id="compare-results"></div>
+        </section>
+
+        <!-- Custos -->
+        <section data-panel="costs" hidden>
+          <div class="panel-head">
+            <div>
+              <h1>Custos de IA</h1>
+              <p>Calculados com o uso real que cada IA informa em cada prova.</p>
+            </div>
+            <div class="segmented" id="period">
+              <button data-period="today" aria-pressed="true">Hoje</button>
+              <button data-period="7d" aria-pressed="false">7 dias</button>
+              <button data-period="30d" aria-pressed="false">30 dias</button>
+              <button data-period="month" aria-pressed="false">Este mês</button>
+            </div>
+          </div>
+          <div class="stats-cards" id="stats-cards"></div>
+
+          <div class="two-col">
+            <div class="card">
+              <h2>Por IA</h2>
+              <table class="table" id="provider-table"><thead><tr><th>IA</th><th>Provas</th><th>Gasto</th><th>Média/prova</th><th>Tempo médio</th></tr></thead><tbody></tbody></table>
+            </div>
+            <div class="card">
+              <h2>Por peça</h2>
+              <table class="table" id="product-table"><thead><tr><th>Peça</th><th>Provas</th><th>Gasto</th><th title="Cliques no WhatsApp">WhatsApp</th><th title="Cliques no link de compra">Link</th><th>Downloads</th></tr></thead><tbody></tbody></table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Simulador mensal</h2>
+            <p class="muted">Quanto custaria por mês com cada IA. O custo por prova usa a média real da loja quando há provas; senão, a estimativa da tabela de preços.</p>
+            <div class="sim-inputs">
+              <label class="field compact"><span>Clientes por dia</span><input id="sim-clients" type="number" min="0" value="20" /></label>
+              <label class="field compact"><span>Provas por cliente</span><input id="sim-tries" type="number" min="0" step="0.5" value="2" /></label>
+              <label class="field compact"><span>Reaproveitadas (%)</span><input id="sim-cache" type="number" min="0" max="100" value="10" /></label>
+              <label class="field compact"><span>Custos fixos (R$/mês)</span><input id="sim-fixed" type="number" min="0" step="1" /></label>
+            </div>
+            <table class="table" id="sim-table"><thead><tr><th>IA</th><th>Custo por prova</th><th>Provas pagas/mês</th><th>IA/mês</th><th>Total/mês</th></tr></thead><tbody></tbody></table>
+          </div>
+
+          <div class="card">
+            <h2>Últimas provas</h2>
+            <div class="table-wrap">
+              <table class="table" id="recent-table"><thead><tr><th>Quando</th><th>Peça</th><th>IA</th><th>Situação</th><th>Custo</th><th>Tempo</th><th></th></tr></thead><tbody></tbody></table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Configurações -->
+        <section data-panel="settings" hidden>
+          <div class="panel-head">
+            <div>
+              <h1>Configurações</h1>
+              <p>Loja, IA ativa, preços das IAs e limites de gasto.</p>
+            </div>
+          </div>
+          <form id="settings-form" novalidate>
+            <div class="card">
+              <h2>Loja</h2>
+              <div class="row three">
+                <label class="field"><span>Nome da loja</span><input id="s-store-name" maxlength="80" /></label>
+                <label class="field"><span>WhatsApp de vendas</span><input id="s-store-whatsapp" inputmode="tel" placeholder="(11) 99999-9999" /></label>
+                <label class="field"><span>Site da loja (opcional)</span><input id="s-store-storeUrl" type="url" placeholder="https://..." /></label>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2>IA que gera as provas</h2>
+              <div class="provider-cards" id="provider-cards"></div>
+              <p class="muted">As chaves das IAs ficam nas variáveis de ambiente do servidor (GEMINI_API_KEY, OPENAI_API_KEY, FASHN_API_KEY). Sem chave, a IA não pode ser ativada.</p>
+            </div>
+
+            <div class="card">
+              <h2>Modelos e preços</h2>
+              <p class="muted">Atualize quando o fornecedor mudar o preço. Valores em US$.</p>
+              <div class="price-grid">
+                <fieldset>
+                  <legend>Google Gemini</legend>
+                  <label class="field"><span>Modelo</span><input id="s-gemini-model" /></label>
+                  <label class="field"><span>Resolução</span><select id="s-gemini-imageSize"><option>512</option><option>1K</option><option>2K</option><option>4K</option></select></label>
+                  <label class="field"><span>Entrada (por 1M tokens)</span><input id="s-gemini-inputPerM" inputmode="decimal" /></label>
+                  <label class="field"><span>Imagem gerada (por 1M tokens)</span><input id="s-gemini-outputImagePerM" inputmode="decimal" /></label>
+                  <label class="field"><span>Texto/raciocínio (por 1M tokens)</span><input id="s-gemini-outputTextPerM" inputmode="decimal" /></label>
+                </fieldset>
+                <fieldset>
+                  <legend>OpenAI GPT Image</legend>
+                  <label class="field"><span>Modelo</span><input id="s-openai-model" /></label>
+                  <label class="field"><span>Qualidade</span><select id="s-openai-quality"><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option></select></label>
+                  <label class="field"><span>Texto de entrada (por 1M)</span><input id="s-openai-textInputPerM" inputmode="decimal" /></label>
+                  <label class="field"><span>Imagem de entrada (por 1M)</span><input id="s-openai-imageInputPerM" inputmode="decimal" /></label>
+                  <label class="field"><span>Imagem gerada (por 1M)</span><input id="s-openai-outputPerM" inputmode="decimal" /></label>
+                </fieldset>
+                <fieldset>
+                  <legend>FASHN</legend>
+                  <label class="field"><span>Modelo</span><input id="s-fashn-model" /></label>
+                  <label class="field"><span>Modo</span><select id="s-fashn-mode"><option value="performance">Rápido</option><option value="balanced">Equilibrado</option><option value="quality">Qualidade</option></select></label>
+                  <label class="field"><span>Preço do crédito</span><input id="s-fashn-perCredit" inputmode="decimal" /></label>
+                  <label class="field"><span>Créditos por prova</span><input id="s-fashn-creditsPerRun" inputmode="decimal" /></label>
+                </fieldset>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2>Limites e dinheiro</h2>
+              <div class="row three">
+                <label class="field"><span>Provas por cliente/dia</span><input id="s-limits-perClientPerDay" type="number" min="1" /></label>
+                <label class="field"><span>Provas por internet (IP)/dia</span><input id="s-limits-perIpPerDay" type="number" min="1" /></label>
+                <label class="field"><span>Teto de gasto por dia (US$)</span><input id="s-limits-dailyBudgetUsd" inputmode="decimal" /></label>
+                <label class="field"><span>Apagar fotos após (horas)</span><input id="s-limits-retentionHours" type="number" min="1" /></label>
+                <label class="field"><span>Cotação US$ → R$</span><input id="s-money-usdToBrl" inputmode="decimal" /></label>
+                <label class="field"><span>Custos fixos (R$/mês)</span><input id="s-money-fixedMonthlyBrl" inputmode="decimal" /></label>
+              </div>
+            </div>
+            <p class="form-error" id="settings-error" role="alert"></p>
+            <div class="save-bar"><button class="btn btn-primary" id="save-settings" type="submit">Salvar configurações</button></div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" hidden></div>
+    <script type="module" src="/admin/js/main.js"></script>
+  </body>
+</html>

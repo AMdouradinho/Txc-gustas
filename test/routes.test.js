@@ -45,7 +45,10 @@ test('painel sem login: 401', async () => {
 test('login certo libera o painel; logout derruba', async () => {
   const { app } = setup();
   const agent = await adminAgent(app);
-  await agent.get('/api/admin/me').expect(200);
+  const me = (await agent.get('/api/admin/me').expect(200)).body;
+  assert.equal(me.catalog.categories['boné'], 'headwear');
+  assert.deepEqual(me.catalog.genders, ['masculino', 'feminino', 'unissex']);
+  assert.deepEqual(me.catalog.tryonTypes, ['top', 'bottom', 'full', 'headwear']);
   await agent.post('/api/admin/logout').expect(204);
   await agent.get('/api/admin/me').expect(401);
 });
